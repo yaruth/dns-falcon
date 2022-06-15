@@ -165,11 +165,12 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
             name = dns.name.Name(('initial-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
             add_zone(name, algorithm, nsec)
             delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
+            
             # new RRSIGs
-            #name = dns.name.Name(('new_rrsig-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
-            #add_zone(name, algorithm, nsec)
-            #delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)            
-            #auth(name, )
+            name = dns.name.Name(('new_rrsig-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
+            add_zone(name, algorithm, nsec)
+            delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)            
+            auth("add-zone-key", name, "KSK active unpublished falcon")
 
 
 if __name__ == "__main__":
