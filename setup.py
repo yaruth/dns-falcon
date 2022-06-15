@@ -182,6 +182,22 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
             print(id)
             auth("publish-zone-key", name.to_text(), id)
 
+            # new DS - irrelevant?
+
+            # DNSKEY removal
+            print("WASSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP")
+            name = dns.name.Name(('new_dnskey-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
+            add_zone(name, algorithm, nsec)
+            delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
+            out = auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
+            id = out.splitlines()[-1]
+            print(id)
+            auth("publish-zone-key", name.to_text(), id)
+            output = subprocess.Popen(auth("show-zone", name.to_text()))
+            print(output)
+            # RRSIG removal
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
