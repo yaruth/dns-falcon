@@ -3,6 +3,7 @@ import logging
 import os
 import subprocess
 from typing import Set, Tuple
+import time
 
 import dns.dnssec
 import dns.name
@@ -41,7 +42,7 @@ def recursor(*args) -> str:
     return stdout
 
 
-def add_zone(name: dns.name.Name, algorithm: str, nsec: int = 1):
+def add_zone(name: dns.name.Name, algorithm: str, nsec: int = 1) -> str:
     assert nsec in {1, 3}
     auth("create-zone", name.to_text())
     if nsec == 3:
@@ -53,9 +54,9 @@ def add_zone(name: dns.name.Name, algorithm: str, nsec: int = 1):
         auth("add-record", name.to_text(), subname, "TXT",
              "\"FALCON DNSSEQ PoC; details: github.com/nils-wisiol/dns-falcon\"")
     if algorithm.startswith('rsa'):
-        auth("add-zone-key", name.to_text(), "2048", "active", algorithm)
+        return auth("add-zone-key", name.to_text(), "2048", "active", algorithm)
     else:
-        auth("add-zone-key", name.to_text(), "active", algorithm)
+        return auth("add-zone-key", name.to_text(), "active", algorithm)
 
 
 def get_ds(name: dns.name.Name):
@@ -185,20 +186,32 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
             # new DS - irrelevant?
 
             # DNSKEY removal
-            print("WASSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP")
-            name = dns.name.Name(('new_dnskey-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
+            name = dns.name.Name(('dnskey_removal-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
             add_zone(name, algorithm, nsec)
+            initial_zone_out = add_zone(name, algorithm, nsec)
+            initial_zone_out_id = initial_zone_out.splitlines()[-1]
             delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
             out = auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
             id = out.splitlines()[-1]
             print(id)
             auth("publish-zone-key", name.to_text(), id)
-            output = subprocess.Popen(auth("show-zone", name.to_text()))
-            print(output)
-            # RRSIG removal
+            auth("unpublish-zone-key", name.to_text(), initial_zone_out_id)
 
+            # RRSIG removal
+            name = dns.name.Name(('rrsig_removal-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
+            add_zone(name, algorithm, nsec)
+            initial_zone_out = add_zone(name, algorithm, nsec)
+            initial_zone_out_id = initial_zone_out.splitlines()[-1]
+            delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
+            out = auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
+            id = out.splitlines()[-1]
+            print(id)
+            auth("publish-zone-key", name.to_text(), id)
+            auth("unpublish-zone-key", name.to_text(), initial_zone_out_id)
+            auth("deactivate-zone-key", name.to_text(), initial_zone_out_id)
 
 if __name__ == "__main__":
+    t0 = time.time()
     logging.basicConfig(level=logging.DEBUG)
 
     local_example = dns.name.Name(("example", ""))
@@ -218,3 +231,6 @@ if __name__ == "__main__":
         delegate_desec(global_example, global_parent, global_ns_ip4_set, global_ns_ip6_set)
 
     auth('rectify-all-zones')
+    t1 = time.time()
+    total = t1-t0
+    print("Total time:" + total)
