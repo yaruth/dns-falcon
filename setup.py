@@ -190,11 +190,15 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
             add_zone(name, algorithm, nsec)
             initial_zone_out = add_zone(name, algorithm, nsec)
             initial_zone_out_id = initial_zone_out.splitlines()[-1]
+            print("initiale ZONE ID:")
+            print(initial_zone_out_id)
             delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
             out = auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
             id = out.splitlines()[-1]
+            print("publish new id:")
             print(id)
             auth("publish-zone-key", name.to_text(), id)
+            print("remove old zone with ID:")
             auth("unpublish-zone-key", name.to_text(), initial_zone_out_id)
 
             # RRSIG removal
@@ -233,4 +237,4 @@ if __name__ == "__main__":
     auth('rectify-all-zones')
     t1 = time.time()
     total = t1-t0
-    print("Total time:" + total)
+    print("Total time:", total)
