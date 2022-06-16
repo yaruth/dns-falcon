@@ -174,13 +174,11 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
             auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
             
             # new DNSKEY
-            print("WASSAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP")
             name = dns.name.Name(('new_dnskey-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
             add_zone(name, algorithm, nsec)
             delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
             out = auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
             id = out.splitlines()[-1]
-            print(id)
             auth("publish-zone-key", name.to_text(), id)
 
             # new DS - irrelevant?
@@ -189,15 +187,10 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
             name = dns.name.Name(('dnskey_removal-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
             initial_zone_out = add_zone(name, algorithm, nsec)
             initial_zone_out_id = initial_zone_out.splitlines()[-1]
-            print("initiale ZONE ID:")
-            print(initial_zone_out_id)
             delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
             out = auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
             id = out.splitlines()[-1]
-            print("publish new id:")
-            print(id)
             auth("publish-zone-key", name.to_text(), id)
-            print("remove old zone with ID:")
             auth("unpublish-zone-key", name.to_text(), initial_zone_out_id)
 
             # RRSIG removal
@@ -207,7 +200,6 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
             delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
             out = auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
             id = out.splitlines()[-1]
-            print(id)
             auth("publish-zone-key", name.to_text(), id)
             auth("unpublish-zone-key", name.to_text(), initial_zone_out_id)
             auth("deactivate-zone-key", name.to_text(), initial_zone_out_id)
