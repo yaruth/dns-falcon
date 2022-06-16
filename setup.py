@@ -187,7 +187,6 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
 
             # DNSKEY removal
             name = dns.name.Name(('dnskey_removal-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
-            add_zone(name, algorithm, nsec)
             initial_zone_out = add_zone(name, algorithm, nsec)
             initial_zone_out_id = initial_zone_out.splitlines()[-1]
             print("initiale ZONE ID:")
@@ -203,7 +202,6 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
 
             # RRSIG removal
             name = dns.name.Name(('rrsig_removal-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
-            add_zone(name, algorithm, nsec)
             initial_zone_out = add_zone(name, algorithm, nsec)
             initial_zone_out_id = initial_zone_out.splitlines()[-1]
             delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
