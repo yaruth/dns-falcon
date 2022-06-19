@@ -36,7 +36,9 @@ def auth(*args) -> str:
     stdout, _ = run(("docker-compose", "exec", "-T", "auth", "pdnsutil") + args)
     return stdout
 
-
+# TODO:
+# muss geprintet werden, statt run
+# " ".join(("docker-compose", "exec", "-T", "recursor", "rec_control") + args)
 def recursor(*args) -> str:
     stdout, _ = run(("docker-compose", "exec", "-T", "recursor", "rec_control") + args)
     return stdout
@@ -162,16 +164,17 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
 
     for nsec in [1, 3]:
         for algorithm in SUPPORTED_ALGORITHMS.values():
-            # initial 
-            name = dns.name.Name(('initial-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
-            add_zone(name, algorithm, nsec)
-            delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
+
+            # # initial 
+            # name = dns.name.Name(('initial-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
+            # add_zone(name, algorithm, nsec)
+            # delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
             
-            # new RRSIGs
-            name = dns.name.Name(('new_rrsig-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
-            add_zone(name, algorithm, nsec)
-            delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)            
-            auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
+            # # new RRSIGs
+            # name = dns.name.Name(('new_rrsig-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
+            # add_zone(name, algorithm, nsec)
+            # delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)            
+            # auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
             
             # new DNSKEY
             name = dns.name.Name(('new_dnskey-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
@@ -181,28 +184,39 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
             id = out.splitlines()[-1]
             auth("publish-zone-key", name.to_text(), id)
 
-            # new DS - irrelevant?
+            # new DS
+            # neue DS records hinzufügen und alte DS records entfernen
+            # def delegate_auth(zone: dns.name.Name, parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[str]):
+            #     ns = _delegate_set_ns_records(zone, parent, ns_ip4_set, ns_ip6_set)
+            #     subname = zone - parent
+            #     auth('add-record', parent.to_text(), subname.to_text(), 'NS', ns.to_text())
+            #     ds_set = get_ds(zone)
+            #     for ds in ds_set:
+            #         auth('add-record', parent.to_text(), subname.to_text(), 'DS', ds.to_text())
+            set_trustanchor_recursor(name)
 
+            # remove old DS record
+            
             # DNSKEY removal
-            name = dns.name.Name(('dnskey_removal-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
-            initial_zone_out = add_zone(name, algorithm, nsec)
-            initial_zone_out_id = initial_zone_out.splitlines()[-1]
-            delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
-            out = auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
-            id = out.splitlines()[-1]
-            auth("publish-zone-key", name.to_text(), id)
-            auth("unpublish-zone-key", name.to_text(), initial_zone_out_id)
+            # name = dns.name.Name(('dnskey_removal-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
+            # initial_zone_out = add_zone(name, algorithm, nsec)
+            # initial_zone_out_id = initial_zone_out.splitlines()[-1]
+            # delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
+            # out = auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
+            # id = out.splitlines()[-1]
+            # auth("publish-zone-key", name.to_text(), id)
+            # auth("unpublish-zone-key", name.to_text(), initial_zone_out_id)
 
-            # RRSIG removal
-            name = dns.name.Name(('rrsig_removal-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
-            initial_zone_out = add_zone(name, algorithm, nsec)
-            initial_zone_out_id = initial_zone_out.splitlines()[-1]
-            delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
-            out = auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
-            id = out.splitlines()[-1]
-            auth("publish-zone-key", name.to_text(), id)
-            auth("unpublish-zone-key", name.to_text(), initial_zone_out_id)
-            auth("deactivate-zone-key", name.to_text(), initial_zone_out_id)
+            # # RRSIG removal
+            # name = dns.name.Name(('rrsig_removal-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
+            # initial_zone_out = add_zone(name, algorithm, nsec)
+            # initial_zone_out_id = initial_zone_out.splitlines()[-1]
+            # delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
+            # out = auth("add-zone-key", name.to_text(), "KSK", "active", "unpublished", "falcon")
+            # id = out.splitlines()[-1]
+            # auth("publish-zone-key", name.to_text(), id)
+            # auth("unpublish-zone-key", name.to_text(), initial_zone_out_id)
+            # auth("deactivate-zone-key", name.to_text(), initial_zone_out_id)
 
 if __name__ == "__main__":
     t0 = time.time()
