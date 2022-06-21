@@ -33,15 +33,17 @@ def run(args, stdin: str = None) -> Tuple[str, str]:
 
 
 def auth(*args) -> str:
-    stdout, _ = run(("docker-compose", "exec", "-T", "auth", "pdnsutil") + args)
+    stdout, _ = run(("pdnsutil") + args)
     return stdout
 
 # TODO:
 # muss geprintet werden, statt run
 # " ".join(("docker-compose", "exec", "-T", "recursor", "rec_control") + args)
 def recursor(*args) -> str:
-    stdout, _ = run(("docker-compose", "exec", "-T", "recursor", "rec_control") + args)
-    return stdout
+    #stdout, _ = run(("docker-compose", "exec", "-T", "recursor", "rec_control") + args)
+    x = " ".join(("docker-compose", "exec", "-T", "recursor", "rec_control") + args)
+    print(x)
+    #return stdout
 
 
 def add_zone(name: dns.name.Name, algorithm: str, nsec: int = 1) -> str:
@@ -199,7 +201,7 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
             auth("unpublish-zone-key", name.to_text(), initial_zone_out_id)
             set_trustanchor_recursor(name)
 
-
+            # mit  get_ds/delegate_auth siehe l.113 arbeiten
             # # RRSIG removal
             name = dns.name.Name(('rrsig_removal-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
             initial_zone_out = add_zone(name, algorithm, nsec)
