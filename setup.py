@@ -33,16 +33,18 @@ def run(args, stdin: str = None) -> Tuple[str, str]:
 
 
 def auth(*args) -> str:
-    stdout, _ = run(("pdnsutil") + args)
+    stdout, _ = run(("pdnsutil",) + args)
+    #stdout, _ = run(("pdnsutil") + "createzone example")
     return stdout
 
-# TODO:
-# muss geprintet werden, statt run
-# " ".join(("docker-compose", "exec", "-T", "recursor", "rec_control") + args)
 def recursor(*args) -> str:
     #stdout, _ = run(("docker-compose", "exec", "-T", "recursor", "rec_control") + args)
+    #x = " ".join(("docker-compose", "exec", "-T", "recursor", "rec_control") + args + ("\n",))
     x = " ".join(("docker-compose", "exec", "-T", "recursor", "rec_control") + args)
     print(x)
+    #f = open("./output_setup.py", "a")
+    #f.write(x)
+    #f.close()
     #return stdout
 
 
@@ -117,6 +119,12 @@ def delegate_auth(zone: dns.name.Name, parent: dns.name.Name, ns_ip4_set: Set[st
     auth('add-record', parent.to_text(), subname.to_text(), 'NS', ns.to_text())
     ds_set = get_ds(zone)
     for ds in ds_set:
+        #print("##############################################################################")
+        #print(ds)
+        #print("parent.to_text: " + parent.to_text())
+        #print("subname.to_text: " + subname.to_text())
+        #print("ds.to_text: " + ds.to_text())
+        #print("##############################################################################")
         auth('add-record', parent.to_text(), subname.to_text(), 'DS', ds.to_text())
 
 
@@ -167,12 +175,12 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
     for nsec in [1, 3]:
         for algorithm in SUPPORTED_ALGORITHMS.values():
 
-            # # initial 
+            # initial 
             name = dns.name.Name(('initial-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
             add_zone(name, algorithm, nsec)
             delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)
             
-            # # new RRSIGs
+            # new RRSIGs
             name = dns.name.Name(('new_rrsig-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
             add_zone(name, algorithm, nsec)
             delegate_auth(name, parent, ns_ip4_set, ns_ip6_set)            
@@ -187,9 +195,8 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
             auth("publish-zone-key", name.to_text(), id)
 
             # new DS
-            # neue DS records hinzufügen und alte DS records entfernen
-            # remove old DS record
-            
+            # add new DS records and remove old DS records
+
             # DNSKEY removal
             name = dns.name.Name(('dnskey_removal-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
             initial_zone_out = add_zone(name, algorithm, nsec)
@@ -199,10 +206,8 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
             id = out.splitlines()[-1]
             auth("publish-zone-key", name.to_text(), id)
             auth("unpublish-zone-key", name.to_text(), initial_zone_out_id)
-            set_trustanchor_recursor(name)
 
-            # mit  get_ds/delegate_auth siehe l.113 arbeiten
-            # # RRSIG removal
+            # RRSIG removal
             name = dns.name.Name(('rrsig_removal-' + algorithm + ('3' if nsec == 3 else ''),)) + parent
             initial_zone_out = add_zone(name, algorithm, nsec)
             initial_zone_out_id = initial_zone_out.splitlines()[-1]
@@ -212,12 +217,11 @@ def add_test_setup(parent: dns.name.Name, ns_ip4_set: Set[str], ns_ip6_set: Set[
             auth("publish-zone-key", name.to_text(), id)
             auth("unpublish-zone-key", name.to_text(), initial_zone_out_id)
             auth("deactivate-zone-key", name.to_text(), initial_zone_out_id)
-            set_trustanchor_recursor(name)
 
 if __name__ == "__main__":
     t0 = time.time()
     logging.basicConfig(level=logging.DEBUG)
-
+    
     local_example = dns.name.Name(("example", ""))
     local_ns_ip4 = "172.20.53.101"
     add_test_setup(local_example, {local_ns_ip4}, set())
@@ -230,7 +234,7 @@ if __name__ == "__main__":
         global_ns_ip4_set = set(filter(bool, os.environ.get('PUBLIC_IP4_ADDRESSES', '').split(',')))
         global_ns_ip6_set = set(filter(bool, os.environ.get('PUBLIC_IP6_ADDRESSES', '').split(',')))
         if not global_ns_ip4_set and not global_ns_ip6_set:
-            raise ValueError("At least one public IP address needs ot be supplied.")
+            raise ValueError("At least one public IP address needs to be supplied.")
         add_test_setup(global_example, global_ns_ip4_set, global_ns_ip6_set)
         delegate_desec(global_example, global_parent, global_ns_ip4_set, global_ns_ip6_set)
 
