@@ -1,0 +1,47 @@
+version: '3.7'
+
+networks:
+  internal:
+    ipam:
+      config:
+        - subnet: 172.20.53.0/24
+    driver_opts:
+      com.docker.network.driver.mtu: 4096
+
+services:
+  auth:
+    build:
+      context: pdns
+      dockerfile: Dockerfile-auth
+    user: root
+    volumes:
+      - ./auth.conf:/etc/powerdns/pdns.d/auth.conf
+      - ./setup.py:/setup.py
+    environment:
+      - PDNS_AUTH_API_KEY='insecure'
+    ports:
+      - "${PUBLIC_TCP_UDP_PORT_AUTH:-5301}:53/tcp"
+      - "${PUBLIC_TCP_UDP_PORT_AUTH:-5301}:53/udp"
+      - "127.0.0.1:5391:8081/tcp"
+    networks:
+      internal:
+        ipv4_address: 172.20.53.101
+
+  recursor:
+    build:
+      context: pdns
+      dockerfile: Dockerfile-recursor
+    user: root
+    volumes:
+      - ./recursor.conf:/etc/powerdns/recursor.d/recursor.conf
+      - ./recursor.lua:/etc/powerdns/recursor.lua
+    environment:
+      - PDNS_RECURSOR_API_KEY='insecure'
+      - DESEC_DOMAIN
+    ports:
+      - "${PUBLIC_TCP_UDP_PORT_RECURSOR:-5302}:53/tcp"
+      - "${PUBLIC_TCP_UDP_PORT_RECURSOR:-5302}:53/udp"
+      - "127.0.0.1:5392:8082/tcp"
+    networks:
+      internal:
+        ipv4_address: 172.20.53.102

@@ -33,7 +33,9 @@ def run(args, stdin: str = None) -> Tuple[str, str]:
 
 
 def auth(*args) -> str:
+    #stdout, _ = run(("docker-compose", "exec", "-T", "auth", "pdnsutil") + args)
     stdout, _ = run(("pdnsutil",) + args)
+    #stdout, _ = run("pdnsutil" + args)
     #stdout, _ = run(("pdnsutil") + "createzone example")
     return stdout
 
@@ -60,9 +62,9 @@ def add_zone(name: dns.name.Name, algorithm: str, nsec: int = 1) -> str:
         auth("add-record", name.to_text(), subname, "TXT",
              "\"FALCON DNSSEQ PoC; details: github.com/nils-wisiol/dns-falcon\"")
     if algorithm.startswith('rsa'):
-        return auth("add-zone-key", name.to_text(), "2048", "active", algorithm)
+        return auth("add-zone-key", name.to_text(), "2048", "ksk", "active", algorithm)
     else:
-        return auth("add-zone-key", name.to_text(), "active", algorithm)
+        return auth("add-zone-key", name.to_text(),"ksk", "active", algorithm)
 
 
 def get_ds(name: dns.name.Name):
